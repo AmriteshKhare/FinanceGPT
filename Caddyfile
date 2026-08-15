@@ -1,0 +1,53 @@
+{
+	email off
+	local_certs
+}
+
+finance.local {
+	encode gzip
+
+	# API + OpenAPI
+	handle /v1/* {
+		reverse_proxy api:4000
+	}
+	handle /health {
+		reverse_proxy api:4000
+	}
+	handle /ready {
+		reverse_proxy api:4000
+	}
+	handle /docs* {
+		reverse_proxy api:4000
+	}
+
+	# Web app (PWA)
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+localhost {
+	encode gzip
+	handle /v1/* {
+		reverse_proxy api:4000
+	}
+	handle /health {
+		reverse_proxy api:4000
+	}
+	handle /ready {
+		reverse_proxy api:4000
+	}
+	handle /docs* {
+		reverse_proxy api:4000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}
