@@ -16,13 +16,39 @@ Local-first personal finance copilot for India. Deterministic finance engine fir
 
 See [docs/adr/0001-llm-not-trusted-for-calculations.md](docs/adr/0001-llm-not-trusted-for-calculations.md).
 
+## Homelab target: smaug
+
+Production-style deploy is the always-on LAN host **smaug** (`192.168.1.30`), not a cloud VPS.
+
+Full host context: [docs/homelab-smaug.md](docs/homelab-smaug.md) (mirrors the Flipkart `localdockersetup.md` conventions).
+
+| Service | Container | LAN URL |
+|---------|-----------|---------|
+| App UI | `finance-web` | http://192.168.1.30:3100 |
+| Logs | Dozzle | http://192.168.1.30:8888 |
+| Docker GUI | Portainer | https://192.168.1.30:9443 |
+
+Postgres (`finance-db`) and the API (`finance-api`) stay on the Docker network only. The browser talks to port **3100**; Next.js rewrites `/v1` to the API container.
+
+### Deploy to smaug
+
+```bash
+scp -r . keeper@192.168.1.30:~/FinanceGPT/
+ssh -t keeper@192.168.1.30
+cd ~/FinanceGPT
+cp -n .env.example .env   # set SESSION_SECRET + INITIAL_ADMIN_PASSWORD
+docker compose up -d --build
+```
+
+Then open http://192.168.1.30:3100 from any device on the LAN (including iPhone).
+
 ## Prerequisites
 
-- Node.js 22+ (Docker images pin Node 22 LTS)
+- Node.js 22+ (Docker images pin Node 22 LTS) for local Mac development
 - pnpm 9 (`corepack enable` or `npx pnpm`)
-- Docker + Docker Compose (for full local-network deploy)
+- Docker Compose on **smaug** for the always-on stack
 
-## Quick start (Docker)
+## Quick start (Docker on smaug / any Compose host)
 
 1. Copy env and set secrets:
 
@@ -31,27 +57,21 @@ cp .env.example .env
 # Edit SESSION_SECRET, INITIAL_ADMIN_PASSWORD
 ```
 
-2. Map the hostname (optional but recommended):
+2. Start the stack:
 
 ```bash
-echo '127.0.0.1 finance.local' | sudo tee -a /etc/hosts
+docker compose up -d --build
 ```
 
-3. Start the stack:
+3. Open http://192.168.1.30:3100 (or `http://localhost:3100` if Compose runs on the same machine).
 
-```bash
-docker compose up --build
-```
-
-4. Open `https://finance.local` (Caddy issues a local certificate). Trust the local CA if your browser warns, or use `https://localhost`.
-
-5. Sign in with `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` from `.env`.
+4. Sign in with `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` from `.env`.
 
 ### Security boundaries
 
 - Postgres is **not** published to the host — only reachable on the Docker `internal` network.
-- Web and API are reached through Caddy (TLS). Prefer `finance.local` on your LAN.
-- Session cookies are HttpOnly + `SameSite=Lax`. Set `COOKIE_SECURE=true` behind HTTPS (Compose does this).
+- Only `finance-web` publishes a LAN port (`3100`).
+- Session cookies are HttpOnly + `SameSite=Lax`. Keep `COOKIE_SECURE=false` for plain HTTP on the LAN; set `true` only behind TLS.
 - `AI_ENABLED=false` by default; finance features do not require a model.
 - Transaction notes/amounts are redacted from API logs by default (enforced as routes are added).
 
@@ -65,9 +85,9 @@ On first API start, if no users exist, the API creates:
 
 Change the password after first login in a later milestone (or rotate via DB for now).
 
-## Local development (without Docker for apps)
+## Local development (Mac, without full Compose)
 
-1. Run Postgres locally (or temporarily expose it yourself — do **not** expose Postgres in the default Compose file).
+1. Run Postgres yourself (do **not** publish Postgres in the default Compose file used on smaug).
 
 2. Point `.env` `DATABASE_URL` at that instance (e.g. `postgresql://finance:finance@127.0.0.1:5432/finance`).
 
@@ -100,18 +120,14 @@ Covers finance-core paise formatting and API config/auth/health unit tests. Full
 
 ## Backups (encrypted dumps)
 
-Docker volumes are **not** encrypted by this project. For backups:
+Docker volumes are **not** encrypted by this project. On smaug:
 
 ```bash
-# From a host that can reach the db container on the compose network:
 docker compose exec -T db pg_dump -U finance finance | gzip > finance-$(date +%F).sql.gz
-# Encrypt the dump at rest, e.g.:
 gpg --symmetric --cipher-algo AES256 finance-YYYY-MM-DD.sql.gz
 ```
 
 Store the ciphertext off-box. Restore only onto a trusted machine.
-
-Documented deletion/retention and data-export APIs are planned for later milestones.
 
 ## Limitations (M1)
 
@@ -122,4 +138,4 @@ Documented deletion/retention and data-export APIs are planned for later milesto
 
 ## License / privacy
 
-Designed for private home-server use on a local network. Do not expose Postgres or unauthenticated admin bootstrap credentials to the public internet.
+Designed for private home-server use on a local network (`192.168.1.x`). Do not expose Postgres or unauthenticated admin bootstrap credentials to the public internet.

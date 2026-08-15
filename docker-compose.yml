@@ -1,6 +1,8 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: finance-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: finance
       POSTGRES_PASSWORD: finance
@@ -14,18 +16,21 @@ services:
       retries: 10
     networks:
       - internal
-    # Intentionally no ports: published — Postgres stays on the Docker network only.
+    # No host ports — Postgres stays on the Docker network only (not LAN-exposed).
 
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    container_name: finance-api
+    restart: unless-stopped
     env_file:
       - .env
     environment:
       DATABASE_URL: postgresql://finance:finance@db:5432/finance
-      COOKIE_SECURE: 'true'
-      CORS_ORIGIN: https://finance.local,http://localhost:3000
+      # Plain HTTP on LAN (smaug pattern). Set true only behind TLS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://192.168.1.30:3100,http://localhost:3000}
       API_PORT: '4000'
     depends_on:
       db:
@@ -43,6 +48,7 @@ services:
       retries: 10
     networks:
       - internal
+    # API is reached via the web reverse-proxy / same-origin rewrites — not published.
 
   web:
     build:
@@ -50,26 +56,16 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         API_INTERNAL_URL: http://api:4000
+    container_name: finance-web
+    restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://api:4000
+    ports:
+      # Free on smaug (avoid 6767,7878,8080,8191,8888,8989,9443,9696)
+      - '3100:3000'
     depends_on:
       api:
         condition: service_healthy
-    networks:
-      - internal
-
-  caddy:
-    image: caddy:2.8-alpine
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - web
-      - api
     networks:
       - internal
 
@@ -79,5 +75,3 @@ networks:
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
