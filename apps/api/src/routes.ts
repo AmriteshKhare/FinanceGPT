@@ -1,7 +1,6 @@
 import type {
   FastifyInstance,
   FastifyPluginAsync,
-  FastifyReply,
   FastifyRequest,
 } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
@@ -23,6 +22,8 @@ import {
   revokeSession,
 } from './auth.js';
 import type { Env } from './config.js';
+import { sendError } from './errors.js';
+import { financeRoutes } from './finance-routes.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -30,17 +31,7 @@ declare module 'fastify' {
   }
 }
 
-export function sendError(
-  reply: FastifyReply,
-  status: number,
-  code: string,
-  message: string,
-  details?: unknown,
-) {
-  return reply.status(status).send({
-    error: { code, message, details },
-  });
-}
+export { sendError } from './errors.js';
 
 async function attachUser(request: FastifyRequest, db: Db) {
   const token = request.cookies[SESSION_COOKIE_NAME];
@@ -168,4 +159,5 @@ export const authRoutes: FastifyPluginAsync<{ db: Db; env: Env }> = async (app, 
 export async function registerRoutes(app: FastifyInstance, db: Db, env: Env) {
   await app.register(healthRoutes, { db });
   await app.register(authRoutes, { db, env });
+  await app.register(financeRoutes, { db });
 }

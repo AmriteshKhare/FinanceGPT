@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  transpilePackages: ['@gpt-finance/shared'],
+  transpilePackages: ['@gpt-finance/shared', '@gpt-finance/finance-core'],
   async rewrites() {
     const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:4000';
     return [

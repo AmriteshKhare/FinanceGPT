@@ -4,15 +4,15 @@ Local-first personal finance copilot for India. Deterministic finance engine fir
 
 > Not a substitute for a Chartered Accountant, tax professional, or SEBI-registered investment adviser. Tax content (when added) is informational only.
 
-## Architecture (Milestone 1)
+## Architecture (Milestone 2)
 
 | Path | Role |
 |------|------|
-| `apps/web` | Next.js App Router PWA shell (login, lock screen, dashboard stub) |
-| `apps/api` | Fastify REST API (`/v1`), OpenAPI at `/docs` |
-| `packages/finance-core` | Pure money helpers (integer paise only) |
+| `apps/web` | Next.js PWA: dashboard, accounts, transactions, CSV import |
+| `apps/api` | Fastify REST `/v1` auth + accounts/categories/transactions/imports |
+| `packages/finance-core` | Paise helpers, CSV parse, duplicate fingerprints |
 | `packages/shared` | Shared Zod schemas |
-| `packages/db` | Drizzle schema + Postgres migrations |
+| `packages/db` | Drizzle schema + migrations (auth + ledger) |
 
 See [docs/adr/0001-llm-not-trusted-for-calculations.md](docs/adr/0001-llm-not-trusted-for-calculations.md).
 
@@ -129,12 +129,12 @@ gpg --symmetric --cipher-algo AES256 finance-YYYY-MM-DD.sql.gz
 
 Store the ciphertext off-box. Restore only onto a trusted machine.
 
-## Limitations (M1)
+## Limitations (M2)
 
-- No accounts, transactions, budgets, goals, charts, or purchase evaluation yet.
+- Budgets, goals, purchase evaluation, charts, and AI chat are not implemented yet.
 - App lock PIN is a browser-session stub (not household-configured).
-- No live AI / Ollama wiring.
-- CSRF hardening for cookie mutations is planned with broader write APIs.
+- CSRF hardening for cookie mutations is planned for a later pass; all writes require an authenticated session cookie.
+- CSV import does not parse bank PDFs.
 
 ## License / privacy
 

@@ -2,6 +2,7 @@ import * as argon2 from 'argon2';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import {
   auditEvents,
+  ensureHouseholdCategories,
   householdMembers,
   households,
   sessions,
@@ -76,6 +77,8 @@ export async function bootstrapAdmin(db: Db, env: Env): Promise<void> {
     userId: user.id,
     role: 'owner',
   });
+
+  await ensureHouseholdCategories(db, household.id);
 
   await writeAudit(db, {
     householdId: household.id,

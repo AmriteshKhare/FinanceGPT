@@ -78,6 +78,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@gpt-finance/finance-core':
+        specifier: workspace:*
+        version: link:../../packages/finance-core
       '@gpt-finance/shared':
         specifier: workspace:*
         version: link:../../packages/shared

@@ -9,7 +9,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { createDb, type Db } from '@gpt-finance/db';
+import { createDb, ensureAllHouseholdCategories, type Db } from '@gpt-finance/db';
 import { bootstrapAdmin } from './auth.js';
 import { corsOrigins, loadEnv, type Env } from './config.js';
 import { registerRoutes } from './routes.js';
@@ -92,6 +92,7 @@ export async function createAppFromEnv(
   const env = loadEnv(envSource);
   const db = createDb(env.DATABASE_URL);
   await bootstrapAdmin(db, env);
+  await ensureAllHouseholdCategories(db);
   const app = await buildApp({ env, db });
   return { app, env, db };
 }

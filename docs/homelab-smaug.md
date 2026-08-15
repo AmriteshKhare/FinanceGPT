@@ -19,6 +19,12 @@ Source of truth for the always-on LAN host: `/Volumes/DevDrive/Repositories/flip
 | `finance-api` | build `apps/api` | none | via web `/v1`, `/health`, `/docs` |
 | `finance-web` | build `apps/web` | `3100 → 3000` | http://192.168.1.30:3100 |
 
+After pulling Milestone 2, rebuild so migration `0001_m2_accounts_transactions` applies:
+
+```bash
+cd ~/FinanceGPT && git pull && docker compose up -d --build
+```
+
 Port `3100` is chosen to avoid collisions with Sonarr/Radarr/qBittorrent/Dozzle/Portainer/etc.
 
 Caddy / `finance.local` is **not** used on smaug. Access matches other homelab apps: `http://192.168.1.30:<port>`.

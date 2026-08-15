@@ -8,6 +8,13 @@
       "when": 1723725000000,
       "tag": "0000_m1_auth_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1723728600000,
+      "tag": "0001_m2_accounts_transactions",
+      "breakpoints": true
     }
   ]
 }
